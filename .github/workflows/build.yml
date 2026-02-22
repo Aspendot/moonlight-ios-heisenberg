@@ -1,0 +1,40 @@
+name: Moonlight iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build Archive
+        run: |
+          xcodebuild -project Moonlight.xcodeproj \
+          -scheme Moonlight \
+          -sdk iphoneos \
+          -configuration Release \
+          -archivePath $PWD/build/Moonlight.xcarchive \
+          clean archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Create IPA
+        run: |
+          mkdir -p build/Payload
+          mv build/Moonlight.xcarchive/Products/Applications/Moonlight.app build/Payload/
+          cd build
+          zip -r Moonlight.ipa Payload
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moonlight-NoSigning
+          path: build/Moonlight.ipa
